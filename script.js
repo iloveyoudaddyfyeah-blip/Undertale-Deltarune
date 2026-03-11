@@ -13,9 +13,11 @@ document.addEventListener('DOMContentLoaded', () => {
             gameFrame.addEventListener('load', () => {
                 try {
                     const innerDoc = gameFrame.contentDocument || gameFrame.contentWindow.document;
-                    Object.defineProperty(innerDoc.navigator, 'userAgent', {
-                        get: function() { return 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'; }
-                    });
+                    if (!/Mobi|Android/i.test(navigator.userAgent)) {
+                        Object.defineProperty(innerDoc.navigator, 'userAgent', {
+                            get: function() { return 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'; }
+                        });
+                    }
                 } catch (e) {
                     // ignore
                 }
