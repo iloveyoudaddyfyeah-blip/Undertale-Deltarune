@@ -1,62 +1,46 @@
 
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Game Launcher</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body {
             margin: 0;
             overflow: hidden;
+            background-color: #1a1a1a;
+            color: #fff;
+            font-family: 'Roboto', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
         }
         #game-selection {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
             text-align: center;
         }
-        #mobile-controls {
-            display: none;
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 200px;
-            background: transparent;
-            touch-action: none;
-            z-index: 10; /* Make sure it's on top */
+        #game-selection h1 {
+            font-size: 2.5em;
+            margin-bottom: 1em;
         }
-        #joystick {
-            position: absolute;
-            left: 100px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 100px;
-            height: 100px;
-            background: rgba(255,255,255,0.3);
-            border-radius: 50%;
-        }
-        #joystick-handle {
-            position: absolute;
-            left: 25px;
-            top: 25px;
-            width: 50px;
-            height: 50px;
-            background: rgba(255,255,255,0.7);
-            border-radius: 50%;
-        }
-        #action-buttons {
-            position: absolute;
-            right: 20px;
-            top: 50%;
-            transform: translateY(-50%);
-        }
-        #action-buttons button {
-            display: block;
+        .game-button {
+            background-color: #333;
+            border: 2px solid #555;
+            color: #fff;
+            padding: 15px 30px;
+            font-size: 1.2em;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
             margin: 10px;
-            width: 60px;
-            height: 60px;
-            font-size: 24px;
+        }
+        .game-button:hover {
+            background-color: #444;
+            transform: scale(1.05);
         }
         #game-frame {
             display: none;
@@ -67,13 +51,60 @@
             top: 0;
             left: 0;
         }
+        #mobile-controls {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            left: 0;
+            width: 100%;
+            height: auto;
+            background: transparent;
+            touch-action: none;
+            z-index: 10;
+            justify-content: space-between;
+            align-items: flex-end;
+            padding: 0 20px;
+            box-sizing: border-box;
+        }
+        #joystick {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+        }
+        #joystick-handle {
+            position: absolute;
+            left: 30px;
+            top: 30px;
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
+        }
+        #action-buttons {
+            display: flex;
+            gap: 20px;
+        }
+        .action-button {
+            width: 60px;
+            height: 60px;
+            font-size: 1.5em;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
     </style>
 </head>
 <body>
     <div id="game-selection">
-        <h1>Choose a game to play:</h1>
-        <button onclick="loadGame('Deltarune-HTML-main/index.html')">Deltarune</button>
-        <button onclick="loadGame('Undertale-HTML-main/index.html')">Undertale</button>
+        <h1>Choose a game</h1>
+        <button class="game-button" onclick="loadGame('Deltarune-HTML-main/index.html')">Deltarune</button>
+        <button class="game-button" onclick="loadGame('Undertale-HTML-main/index.html')">Undertale</button>
     </div>
 
     <iframe id="game-frame"></iframe>
@@ -83,15 +114,16 @@
             <div id="joystick-handle"></div>
         </div>
         <div id="action-buttons">
-            <button id="button-z">Z</button>
-            <button id="button-x">X</button>
-            <button id="button-c">C</button>
+            <div id="button-c" class="action-button">C</div>
+            <div id="button-x" class="action-button">X</div>
+            <div id="button-z" class="action-button">Z</div>
         </div>
     </div>
 
     <script>
         const gameSelection = document.getElementById('game-selection');
         const gameFrame = document.getElementById('game-frame');
+        const mobileControls = document.getElementById('mobile-controls');
 
         function loadGame(url) {
             gameSelection.style.display = 'none';
@@ -101,7 +133,7 @@
         }
 
         if (/Mobi|Android/i.test(navigator.userAgent)) {
-            document.getElementById('mobile-controls').style.display = 'block';
+            mobileControls.style.display = 'flex';
         }
 
         const joystick = document.getElementById('joystick');
@@ -120,64 +152,61 @@
             'c': { key: 'c', code: 'KeyC', keyCode: 67 }
         };
 
-        let joystickActive = false;
         let keys = {};
+        let joystickActive = false;
+        let joystickState = { x: 0, y: 0 };
 
-        function getGameElements() {
+        function dispatchKeyEvent(type, keyIdentifier) {
+            const keyInfo = keyMap[keyIdentifier];
+            if (!keyInfo) return;
+            
+            const event = new KeyboardEvent(type, {
+                key: keyInfo.key,
+                code: keyInfo.code,
+                keyCode: keyInfo.keyCode,
+                which: keyInfo.keyCode,
+                bubbles: true,
+                cancelable: true
+            });
+
             if (gameFrame.contentWindow) {
                 const elements = [
                     gameFrame.contentWindow,
                     gameFrame.contentWindow.document,
-                    gameFrame.contentWindow.document.body
-                ];
-                const canvas = gameFrame.contentWindow.document.getElementById('canvas');
-                if (canvas) {
-                    elements.push(canvas);
+                    gameFrame.contentWindow.document.body,
+                    gameFrame.contentWindow.document.getElementById('canvas')
+                ].filter(Boolean);
+                elements.forEach(el => el.dispatchEvent(event));
+            }
+        }
+
+        function updateKeys() {
+            const angle = Math.atan2(joystickState.y, joystickState.x);
+            const angleDeg = angle * 180 / Math.PI;
+            let newKeys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
+
+            if (joystickActive) {
+                if (angleDeg > -135 && angleDeg < -45) newKeys.ArrowUp = true;
+                if (angleDeg > 45 && angleDeg < 135) newKeys.ArrowDown = true;
+                if (angleDeg > 135 || angleDeg < -135) newKeys.ArrowLeft = true;
+                if (angleDeg > -45 && angleDeg < 45) newKeys.ArrowRight = true;
+            }
+
+            for (const key in newKeys) {
+                if (newKeys[key] && !keys[key]) {
+                    dispatchKeyEvent('keydown', key);
+                    keys[key] = true;
+                } else if (!newKeys[key] && keys[key]) {
+                    dispatchKeyEvent('keyup', key);
+                    keys[key] = false;
                 }
-                return elements;
             }
-            return [];
+            requestAnimationFrame(updateKeys);
         }
 
-        function pressKey(keyIdentifier) {
-            const keyInfo = keyMap[keyIdentifier];
-            if (!keyInfo || keys[keyIdentifier]) return;
-            keys[keyIdentifier] = true;
-            const elements = getGameElements();
-            if (elements.length > 0) {
-                const event = new KeyboardEvent('keydown', {
-                    key: keyInfo.key,
-                    code: keyInfo.code,
-                    keyCode: keyInfo.keyCode,
-                    which: keyInfo.keyCode,
-                    bubbles: true,
-                    cancelable: true
-                });
-                elements.forEach(element => element.dispatchEvent(event));
-            }
-        }
-
-        function releaseKey(keyIdentifier) {
-            const keyInfo = keyMap[keyIdentifier];
-            if (!keyInfo || !keys[keyIdentifier]) return;
-            keys[keyIdentifier] = false;
-            const elements = getGameElements();
-            if (elements.length > 0) {
-                 const event = new KeyboardEvent('keyup', {
-                    key: keyInfo.key,
-                    code: keyInfo.code,
-                    keyCode: keyInfo.keyCode,
-                    which: akeyInfo.keyCode,
-                    bubbles: true,
-                    cancelable: true
-                });
-                elements.forEach(element => element.dispatchEvent(event));
-            }
-        }
-        
         handle.addEventListener('touchstart', (e) => {
             joystickActive = true;
-        }, {passive: false});
+        }, { passive: false });
 
         handle.addEventListener('touchmove', (e) => {
             if (!joystickActive) return;
@@ -185,48 +214,41 @@
             const rect = joystick.getBoundingClientRect();
             const x = e.touches[0].clientX - rect.left - rect.width / 2;
             const y = e.touches[0].clientY - rect.top - rect.height / 2;
-
+            const dist = Math.min(rect.width / 4, Math.sqrt(x * x + y * y));
             const angle = Math.atan2(y, x);
-            const dist = Math.min(rect.width / 4, Math.sqrt(x*x + y*y));
-            
-            const handleX = dist * Math.cos(angle);
-            const handleY = dist * Math.sin(angle);
-            
-            handle.style.transform = `translate(${handleX}px, ${handleY}px)`;
-
-            const angleDeg = angle * 180 / Math.PI;
-
-            let newKeys = {ArrowUp:false, ArrowLeft:false, ArrowDown:false, ArrowRight:false};
-
-            if (angleDeg > -135 && angleDeg < -45) newKeys.ArrowUp = true; // up
-            if (angleDeg > 45 && angleDeg < 135) newKeys.ArrowDown = true; // down
-            if (angleDeg > 135 || angleDeg < -135) newKeys.ArrowLeft = true; // left
-            if (angleDeg > -45 && angleDeg < 45) newKeys.ArrowRight = true; // right
-            
-            for (const key in newKeys) {
-                if (newKeys[key] && !keys[key]) {
-                    pressKey(key);
-                } else if (!newKeys[key] && keys[key]) {
-                    releaseKey(key);
-                }
-            }
-        }, {passive: false});
+            joystickState = { x: dist * Math.cos(angle), y: dist * Math.sin(angle) };
+            handle.style.transform = `translate(${joystickState.x}px, ${joystickState.y}px)`;
+        }, { passive: false });
 
         handle.addEventListener('touchend', (e) => {
             joystickActive = false;
+            joystickState = { x: 0, y: 0 };
             handle.style.transform = 'translate(0,0)';
-            releaseKey('ArrowUp');
-            releaseKey('ArrowLeft');
-            releaseKey('ArrowDown');
-            releaseKey('ArrowRight');
         });
 
-        buttonZ.addEventListener('touchstart', () => pressKey('z'), {passive: false});
-        buttonZ.addEventListener('touchend', () => releaseKey('z'));
-        buttonX.addEventListener('touchstart', () => pressKey('x'), {passive: false});
-        buttonX.addEventListener('touchend', () => releaseKey('x'));
-        buttonC.addEventListener('touchstart', () => pressKey('c'), {passive: false});
-        buttonC.addEventListener('touchend', () => releaseKey('c'));
+        function createButtonListener(element, key) {
+            element.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (!keys[key]) {
+                    dispatchKeyEvent('keydown', key);
+                    keys[key] = true;
+                }
+            }, { passive: false });
+
+            element.addEventListener('touchend', (e) => {
+                if (keys[key]) {
+                    dispatchKeyEvent('keyup', key);
+                    keys[key] = false;
+                }
+            });
+        }
+
+        createButtonListener(buttonZ, 'z');
+        createButtonListener(buttonX, 'x');
+        createButtonListener(buttonC, 'c');
+        
+        requestAnimationFrame(updateKeys);
+
     </script>
 </body>
 </html>
