@@ -111,13 +111,13 @@
         const buttonC = document.getElementById('button-c');
 
         const keyMap = {
-            'ArrowUp': { key: 'ArrowUp', code: 'ArrowUp' },
-            'ArrowDown': { key: 'ArrowDown', code: 'ArrowDown' },
-            'ArrowLeft': { key: 'ArrowLeft', code: 'ArrowLeft' },
-            'ArrowRight': { key: 'ArrowRight', code: 'ArrowRight' },
-            'z': { key: 'z', code: 'KeyZ' },
-            'x': { key: 'x', code: 'KeyX' },
-            'c': { key: 'c', code: 'KeyC' }
+            'ArrowUp': { key: 'ArrowUp', code: 'ArrowUp', keyCode: 38 },
+            'ArrowDown': { key: 'ArrowDown', code: 'ArrowDown', keyCode: 40 },
+            'ArrowLeft': { key: 'ArrowLeft', code: 'ArrowLeft', keyCode: 37 },
+            'ArrowRight': { key: 'ArrowRight', code: 'ArrowRight', keyCode: 39 },
+            'z': { key: 'z', code: 'KeyZ', keyCode: 90 },
+            'x': { key: 'x', code: 'KeyX', keyCode: 88 },
+            'c': { key: 'c', code: 'KeyC', keyCode: 67 }
         };
 
         let joystickActive = false;
@@ -129,7 +129,15 @@
             keys[keyIdentifier] = true;
             if (gameFrame.contentWindow) {
                 gameFrame.contentWindow.focus();
-                gameFrame.contentWindow.dispatchEvent(new KeyboardEvent('keydown', { 'key': keyInfo.key, 'code': keyInfo.code, bubbles: true }));
+                const event = new KeyboardEvent('keydown', {
+                    key: keyInfo.key,
+                    code: keyInfo.code,
+                    keyCode: keyInfo.keyCode,
+                    which: keyInfo.keyCode,
+                    bubbles: true,
+                    cancelable: true
+                });
+                gameFrame.contentWindow.dispatchEvent(event);
             }
         }
 
@@ -139,7 +147,15 @@
             keys[keyIdentifier] = false;
             if (gameFrame.contentWindow) {
                 gameFrame.contentWindow.focus();
-                gameFrame.contentWindow.dispatchEvent(new KeyboardEvent('keyup', { 'key': keyInfo.key, 'code': keyInfo.code, bubbles: true }));
+                 const event = new KeyboardEvent('keyup', {
+                    key: keyInfo.key,
+                    code: keyInfo.code,
+                    keyCode: keyInfo.keyCode,
+                    which: keyInfo.keyCode,
+                    bubbles: true,
+                    cancelable: true
+                });
+                gameFrame.contentWindow.dispatchEvent(event);
             }
         }
         
