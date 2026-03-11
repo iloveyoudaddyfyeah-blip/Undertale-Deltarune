@@ -123,20 +123,28 @@
         let joystickActive = false;
         let keys = {};
 
-        function getGameCanvas() {
-            if (gameFrame.contentWindow && gameFrame.contentWindow.document) {
-                return gameFrame.contentWindow.document.getElementById('canvas');
+        function getGameElements() {
+            if (gameFrame.contentWindow) {
+                const elements = [
+                    gameFrame.contentWindow,
+                    gameFrame.contentWindow.document,
+                    gameFrame.contentWindow.document.body
+                ];
+                const canvas = gameFrame.contentWindow.document.getElementById('canvas');
+                if (canvas) {
+                    elements.push(canvas);
+                }
+                return elements;
             }
-            return null;
+            return [];
         }
 
         function pressKey(keyIdentifier) {
             const keyInfo = keyMap[keyIdentifier];
             if (!keyInfo || keys[keyIdentifier]) return;
             keys[keyIdentifier] = true;
-            const canvas = getGameCanvas();
-            if (canvas) {
-                canvas.focus();
+            const elements = getGameElements();
+            if (elements.length > 0) {
                 const event = new KeyboardEvent('keydown', {
                     key: keyInfo.key,
                     code: keyInfo.code,
@@ -145,7 +153,7 @@
                     bubbles: true,
                     cancelable: true
                 });
-                canvas.dispatchEvent(event);
+                elements.forEach(element => element.dispatchEvent(event));
             }
         }
 
@@ -153,18 +161,17 @@
             const keyInfo = keyMap[keyIdentifier];
             if (!keyInfo || !keys[keyIdentifier]) return;
             keys[keyIdentifier] = false;
-            const canvas = getGameCanvas();
-            if (canvas) {
-                canvas.focus();
+            const elements = getGameElements();
+            if (elements.length > 0) {
                  const event = new KeyboardEvent('keyup', {
                     key: keyInfo.key,
                     code: keyInfo.code,
                     keyCode: keyInfo.keyCode,
-                    which: keyInfo.keyCode,
+                    which: akeyInfo.keyCode,
                     bubbles: true,
                     cancelable: true
                 });
-                canvas.dispatchEvent(event);
+                elements.forEach(element => element.dispatchEvent(event));
             }
         }
         
