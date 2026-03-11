@@ -22,7 +22,7 @@
             left: 0;
             width: 100%;
             height: 200px;
-            background: rgba(0,0,0,0.5);
+            background: transparent;
             touch-action: none;
             z-index: 10; /* Make sure it's on top */
         }
@@ -110,22 +110,36 @@
         const buttonX = document.getElementById('button-x');
         const buttonC = document.getElementById('button-c');
 
+        const keyMap = {
+            'ArrowUp': { key: 'ArrowUp', code: 'ArrowUp' },
+            'ArrowDown': { key: 'ArrowDown', code: 'ArrowDown' },
+            'ArrowLeft': { key: 'ArrowLeft', code: 'ArrowLeft' },
+            'ArrowRight': { key: 'ArrowRight', code: 'ArrowRight' },
+            'z': { key: 'z', code: 'KeyZ' },
+            'x': { key: 'x', code: 'KeyX' },
+            'c': { key: 'c', code: 'KeyC' }
+        };
+
         let joystickActive = false;
         let keys = {};
 
-        function pressKey(key) {
-            if (keys[key]) return;
-            keys[key] = true;
+        function pressKey(keyIdentifier) {
+            const keyInfo = keyMap[keyIdentifier];
+            if (!keyInfo || keys[keyIdentifier]) return;
+            keys[keyIdentifier] = true;
             if (gameFrame.contentWindow) {
-                gameFrame.contentWindow.dispatchEvent(new KeyboardEvent('keydown', {'key': key, 'code': 'Key' + key.toUpperCase(), bubbles: true}));
+                gameFrame.contentWindow.focus();
+                gameFrame.contentWindow.dispatchEvent(new KeyboardEvent('keydown', { 'key': keyInfo.key, 'code': keyInfo.code, bubbles: true }));
             }
         }
 
-        function releaseKey(key) {
-            if (!keys[key]) return;
-            keys[key] = false;
+        function releaseKey(keyIdentifier) {
+            const keyInfo = keyMap[keyIdentifier];
+            if (!keyInfo || !keys[keyIdentifier]) return;
+            keys[keyIdentifier] = false;
             if (gameFrame.contentWindow) {
-                gameFrame.contentWindow.dispatchEvent(new KeyboardEvent('keyup', {'key': key, 'code': 'Key' + key.toUpperCase(), bubbles: true}));
+                gameFrame.contentWindow.focus();
+                gameFrame.contentWindow.dispatchEvent(new KeyboardEvent('keyup', { 'key': keyInfo.key, 'code': keyInfo.code, bubbles: true }));
             }
         }
         
@@ -150,26 +164,29 @@
 
             const angleDeg = angle * 180 / Math.PI;
 
-            let newKeys = {w:false, a:false, s:false, d:false};
+            let newKeys = {ArrowUp:false, ArrowLeft:false, ArrowDown:false, ArrowRight:false};
 
-            if (angleDeg > -135 && angleDeg < -45) newKeys.w = true; // up
-            if (angleDeg > 45 && angleDeg < 135) newKeys.s = true; // down
-            if (angleDeg > 135 || angleDeg < -135) newKeys.a = true; // left
-            if (angleDeg > -45 && angleDeg < 45) newKeys.d = true; // right
+            if (angleDeg > -135 && angleDeg < -45) newKeys.ArrowUp = true; // up
+            if (angleDeg > 45 && angleDeg < 135) newKeys.ArrowDown = true; // down
+            if (angleDeg > 135 || angleDeg < -135) newKeys.ArrowLeft = true; // left
+            if (angleDeg > -45 && angleDeg < 45) newKeys.ArrowRight = true; // right
             
-            if (newKeys.w !== keys.w) { if(newKeys.w) pressKey('w'); else releaseKey('w'); }
-            if (newKeys.a !== keys.a) { if(newKeys.a) pressKey('a'); else releaseKey('a'); }
-            if (newKeys.s !== keys.s) { if(newKeys.s) pressKey('s'); else releaseKey('s'); }
-            if (newKeys.d !== keys.d) { if(newKeys.d) pressKey('d'); else releaseKey('d'); }
+            for (const key in newKeys) {
+                if (newKeys[key] && !keys[key]) {
+                    pressKey(key);
+                } else if (!newKeys[key] && keys[key]) {
+                    releaseKey(key);
+                }
+            }
         }, {passive: false});
 
         handle.addEventListener('touchend', (e) => {
             joystickActive = false;
             handle.style.transform = 'translate(0,0)';
-            releaseKey('w');
-            releaseKey('a');
-            releaseKey('s');
-            releaseKey('d');
+            releaseKey('ArrowUp');
+            releaseKey('ArrowLeft');
+            releaseKey('ArrowDown');
+            releaseKey('ArrowRight');
         });
 
         buttonZ.addEventListener('touchstart', () => pressKey('z'), {passive: false});
