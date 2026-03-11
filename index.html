@@ -12,7 +12,7 @@
         body {
             margin: 0;
             overflow: hidden;
-            background-color: #1a1a1a;
+            background-color: #000;
             color: #fff;
             font-family: 'Roboto', sans-serif;
             display: flex;
@@ -70,8 +70,9 @@
             position: relative;
             width: 120px;
             height: 120px;
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(0, 0, 0, 0.3);
             border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.2);
         }
         #joystick-handle {
             position: absolute;
@@ -79,7 +80,7 @@
             top: 30px;
             width: 60px;
             height: 60px;
-            background: rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.3);
             border-radius: 50%;
         }
         #action-buttons {
@@ -91,12 +92,16 @@
             height: 60px;
             font-size: 1.5em;
             border-radius: 50%;
-            background-color: rgba(255, 255, 255, 0.2);
-            border: 2px solid rgba(255, 255, 255, 0.4);
+            background-color: rgba(0, 0, 0, 0.4);
+            border: 2px solid rgba(255, 255, 255, 0.2);
             color: #fff;
             display: flex;
             justify-content: center;
             align-items: center;
+        }
+        .action-button.pressed {
+            background-color: rgba(255, 255, 255, 0.4);
+            transform: scale(0.95);
         }
     </style>
 </head>
@@ -120,6 +125,7 @@
         </div>
     </div>
 
+    <script src="error_remover.js"></script>
     <script>
         const gameSelection = document.getElementById('game-selection');
         const gameFrame = document.getElementById('game-frame');
@@ -154,12 +160,11 @@
 
         let keys = {};
         let joystickActive = false;
-        let joystickState = { x: 0, y: 0 };
 
         function dispatchKeyEvent(type, keyIdentifier) {
             const keyInfo = keyMap[keyIdentifier];
             if (!keyInfo) return;
-            
+
             const event = new KeyboardEvent(type, {
                 key: keyInfo.key,
                 code: keyInfo.code,
@@ -180,16 +185,38 @@
             }
         }
 
-        function updateKeys() {
-            const angle = Math.atan2(joystickState.y, joystickState.x);
+        function updateJoystick(x, y) {
+            const angle = Math.atan2(y, x);
+            const distance = Math.sqrt(x * x + y * y);
+            const handleX = distance * Math.cos(angle);
+            const handleY = distance * Math.sin(angle);
+            handle.style.transform = `translate(${handleX}px, ${handleY}px)`;
+
             const angleDeg = angle * 180 / Math.PI;
             let newKeys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
 
             if (joystickActive) {
-                if (angleDeg > -135 && angleDeg < -45) newKeys.ArrowUp = true;
-                if (angleDeg > 45 && angleDeg < 135) newKeys.ArrowDown = true;
-                if (angleDeg > 135 || angleDeg < -135) newKeys.ArrowLeft = true;
-                if (angleDeg > -45 && angleDeg < 45) newKeys.ArrowRight = true;
+                if (angleDeg > -112.5 && angleDeg < -67.5) {
+                    newKeys.ArrowUp = true;
+                } else if (angleDeg > -67.5 && angleDeg < -22.5) {
+                    newKeys.ArrowUp = true;
+                    newKeys.ArrowRight = true;
+                } else if (angleDeg > -22.5 && angleDeg < 22.5) {
+                    newKeys.ArrowRight = true;
+                } else if (angleDeg > 22.5 && angleDeg < 67.5) {
+                    newKeys.ArrowRight = true;
+                    newKeys.ArrowDown = true;
+                } else if (angleDeg > 67.5 && angleDeg < 112.5) {
+                    newKeys.ArrowDown = true;
+                } else if (angleDeg > 112.5 && angleDeg < 157.5) {
+                    newKeys.ArrowDown = true;
+                    newKeys.ArrowLeft = true;
+                } else if (angleDeg > 157.5 || angleDeg < -157.5) {
+                    newKeys.ArrowLeft = true;
+                } else if (angleDeg > -157.5 && angleDeg < -112.5) {
+                    newKeys.ArrowLeft = true;
+                    newKeys.ArrowUp = true;
+                }
             }
 
             for (const key in newKeys) {
@@ -201,54 +228,44 @@
                     keys[key] = false;
                 }
             }
-            requestAnimationFrame(updateKeys);
         }
 
-        handle.addEventListener('touchstart', (e) => {
+        joystick.addEventListener('touchstart', (e) => {
             joystickActive = true;
         }, { passive: false });
 
-        handle.addEventListener('touchmove', (e) => {
+        joystick.addEventListener('touchmove', (e) => {
             if (!joystickActive) return;
             e.preventDefault();
             const rect = joystick.getBoundingClientRect();
             const x = e.touches[0].clientX - rect.left - rect.width / 2;
             const y = e.touches[0].clientY - rect.top - rect.height / 2;
-            const dist = Math.min(rect.width / 4, Math.sqrt(x * x + y * y));
-            const angle = Math.atan2(y, x);
-            joystickState = { x: dist * Math.cos(angle), y: dist * Math.sin(angle) };
-            handle.style.transform = `translate(${joystickState.x}px, ${joystickState.y}px)`;
+            updateJoystick(x, y);
         }, { passive: false });
 
-        handle.addEventListener('touchend', (e) => {
+        joystick.addEventListener('touchend', (e) => {
             joystickActive = false;
-            joystickState = { x: 0, y: 0 };
-            handle.style.transform = 'translate(0,0)';
+            updateJoystick(0, 0);
         });
 
         function createButtonListener(element, key) {
             element.addEventListener('touchstart', (e) => {
                 e.preventDefault();
-                if (!keys[key]) {
-                    dispatchKeyEvent('keydown', key);
-                    keys[key] = true;
-                }
+                element.classList.add('pressed');
+                dispatchKeyEvent('keydown', key);
+                keys[key] = true;
             }, { passive: false });
 
             element.addEventListener('touchend', (e) => {
-                if (keys[key]) {
-                    dispatchKeyEvent('keyup', key);
-                    keys[key] = false;
-                }
+                element.classList.remove('pressed');
+                dispatchKeyEvent('keyup', key);
+                keys[key] = false;
             });
         }
 
         createButtonListener(buttonZ, 'z');
         createButtonListener(buttonX, 'x');
         createButtonListener(buttonC, 'c');
-        
-        requestAnimationFrame(updateKeys);
-
     </script>
 </body>
 </html>
