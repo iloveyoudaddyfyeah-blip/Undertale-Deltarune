@@ -75,6 +75,7 @@
       div.emscripten {
         text-align: center;
 		font-family: "Lucida Console", Monaco, monospace;
+        display: none !important;
       }
 
       /* the canvas *must not* have any border or padding, or mouse coords will be wrong */
