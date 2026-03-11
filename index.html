@@ -123,12 +123,20 @@
         let joystickActive = false;
         let keys = {};
 
+        function getGameCanvas() {
+            if (gameFrame.contentWindow && gameFrame.contentWindow.document) {
+                return gameFrame.contentWindow.document.getElementById('canvas');
+            }
+            return null;
+        }
+
         function pressKey(keyIdentifier) {
             const keyInfo = keyMap[keyIdentifier];
             if (!keyInfo || keys[keyIdentifier]) return;
             keys[keyIdentifier] = true;
-            if (gameFrame.contentWindow) {
-                gameFrame.contentWindow.focus();
+            const canvas = getGameCanvas();
+            if (canvas) {
+                canvas.focus();
                 const event = new KeyboardEvent('keydown', {
                     key: keyInfo.key,
                     code: keyInfo.code,
@@ -137,7 +145,7 @@
                     bubbles: true,
                     cancelable: true
                 });
-                gameFrame.contentWindow.dispatchEvent(event);
+                canvas.dispatchEvent(event);
             }
         }
 
@@ -145,8 +153,9 @@
             const keyInfo = keyMap[keyIdentifier];
             if (!keyInfo || !keys[keyIdentifier]) return;
             keys[keyIdentifier] = false;
-            if (gameFrame.contentWindow) {
-                gameFrame.contentWindow.focus();
+            const canvas = getGameCanvas();
+            if (canvas) {
+                canvas.focus();
                  const event = new KeyboardEvent('keyup', {
                     key: keyInfo.key,
                     code: keyInfo.code,
@@ -155,7 +164,7 @@
                     bubbles: true,
                     cancelable: true
                 });
-                gameFrame.contentWindow.dispatchEvent(event);
+                canvas.dispatchEvent(event);
             }
         }
         
