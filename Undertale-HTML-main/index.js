@@ -123,11 +123,28 @@ var Module = {
 Module.setStatus("Downloading...");
 window.onerror = function (event) {
   // TODO: do not warn on ok events like simulating an infinite loop or exitStatus
+  Module.setStatus("Exception thrown, see JavaScript console");
   spinnerElement.style.display = "none";
   Module.setStatus = function (text) {
     if (text) Module.printErr("[post-exception status] " + text);
   };
 };
+
+if (/Mobi|Android/i.test(navigator.userAgent)) {
+    canvasElement.addEventListener('touchend', (e) => {
+        const touch = e.changedTouches[0];
+        const mouseEvent = new MouseEvent('click', {
+            bubbles: true,
+            cancelable: true,
+            view: window,
+            clientX: touch.clientX,
+            clientY: touch.clientY,
+            screenX: touch.screenX,
+            screenY: touch.screenY
+        });
+        touch.target.dispatchEvent(mouseEvent);
+    });
+}
 
 // Route URL GET parameters to argc+argv
 if (typeof window === "object") {
