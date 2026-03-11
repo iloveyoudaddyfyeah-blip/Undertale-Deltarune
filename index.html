@@ -256,6 +256,12 @@
         }
 
         function handleTouchStart(e) {
+            if (/Mobi|Android/i.test(navigator.userAgent)) {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().catch(() => {});
+                }
+            }
+
             for (const touch of e.changedTouches) {
                 const target = touch.target;
                 if (target === joystick || joystick.contains(target)) {
