@@ -1,0 +1,183 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Game Launcher</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+        #game-selection {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+        #mobile-controls {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 200px;
+            background: rgba(0,0,0,0.5);
+            touch-action: none;
+            z-index: 10; /* Make sure it's on top */
+        }
+        #joystick {
+            position: absolute;
+            left: 100px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 100px;
+            height: 100px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 50%;
+        }
+        #joystick-handle {
+            position: absolute;
+            left: 25px;
+            top: 25px;
+            width: 50px;
+            height: 50px;
+            background: rgba(255,255,255,0.7);
+            border-radius: 50%;
+        }
+        #action-buttons {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        #action-buttons button {
+            display: block;
+            margin: 10px;
+            width: 60px;
+            height: 60px;
+            font-size: 24px;
+        }
+        #game-frame {
+            display: none;
+            border: 0;
+            width: 100vw;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-selection">
+        <h1>Choose a game to play:</h1>
+        <button onclick="loadGame('Deltarune-HTML-main/index.html')">Deltarune</button>
+        <button onclick="loadGame('Undertale-HTML-main/index.html')">Undertale</button>
+    </div>
+
+    <iframe id="game-frame"></iframe>
+
+    <div id="mobile-controls">
+        <div id="joystick">
+            <div id="joystick-handle"></div>
+        </div>
+        <div id="action-buttons">
+            <button id="button-z">Z</button>
+            <button id="button-x">X</button>
+            <button id="button-c">C</button>
+        </div>
+    </div>
+
+    <script>
+        const gameSelection = document.getElementById('game-selection');
+        const gameFrame = document.getElementById('game-frame');
+
+        function loadGame(url) {
+            gameSelection.style.display = 'none';
+            gameFrame.src = url;
+            gameFrame.style.display = 'block';
+            gameFrame.focus();
+        }
+
+        if (/Mobi|Android/i.test(navigator.userAgent)) {
+            document.getElementById('mobile-controls').style.display = 'block';
+        }
+
+        const joystick = document.getElementById('joystick');
+        const handle = document.getElementById('joystick-handle');
+        const buttonZ = document.getElementById('button-z');
+        const buttonX = document.getElementById('button-x');
+        const buttonC = document.getElementById('button-c');
+
+        let joystickActive = false;
+        let keys = {};
+
+        function pressKey(key) {
+            if (keys[key]) return;
+            keys[key] = true;
+            if (gameFrame.contentWindow) {
+                gameFrame.contentWindow.dispatchEvent(new KeyboardEvent('keydown', {'key': key, 'code': 'Key' + key.toUpperCase(), bubbles: true}));
+            }
+        }
+
+        function releaseKey(key) {
+            if (!keys[key]) return;
+            keys[key] = false;
+            if (gameFrame.contentWindow) {
+                gameFrame.contentWindow.dispatchEvent(new KeyboardEvent('keyup', {'key': key, 'code': 'Key' + key.toUpperCase(), bubbles: true}));
+            }
+        }
+        
+        handle.addEventListener('touchstart', (e) => {
+            joystickActive = true;
+        }, {passive: false});
+
+        handle.addEventListener('touchmove', (e) => {
+            if (!joystickActive) return;
+            e.preventDefault();
+            const rect = joystick.getBoundingClientRect();
+            const x = e.touches[0].clientX - rect.left - rect.width / 2;
+            const y = e.touches[0].clientY - rect.top - rect.height / 2;
+
+            const angle = Math.atan2(y, x);
+            const dist = Math.min(rect.width / 4, Math.sqrt(x*x + y*y));
+            
+            const handleX = dist * Math.cos(angle);
+            const handleY = dist * Math.sin(angle);
+            
+            handle.style.transform = `translate(${handleX}px, ${handleY}px)`;
+
+            const angleDeg = angle * 180 / Math.PI;
+
+            let newKeys = {w:false, a:false, s:false, d:false};
+
+            if (angleDeg > -135 && angleDeg < -45) newKeys.w = true; // up
+            if (angleDeg > 45 && angleDeg < 135) newKeys.s = true; // down
+            if (angleDeg > 135 || angleDeg < -135) newKeys.a = true; // left
+            if (angleDeg > -45 && angleDeg < 45) newKeys.d = true; // right
+            
+            if (newKeys.w !== keys.w) { if(newKeys.w) pressKey('w'); else releaseKey('w'); }
+            if (newKeys.a !== keys.a) { if(newKeys.a) pressKey('a'); else releaseKey('a'); }
+            if (newKeys.s !== keys.s) { if(newKeys.s) pressKey('s'); else releaseKey('s'); }
+            if (newKeys.d !== keys.d) { if(newKeys.d) pressKey('d'); else releaseKey('d'); }
+        }, {passive: false});
+
+        handle.addEventListener('touchend', (e) => {
+            joystickActive = false;
+            handle.style.transform = 'translate(0,0)';
+            releaseKey('w');
+            releaseKey('a');
+            releaseKey('s');
+            releaseKey('d');
+        });
+
+        buttonZ.addEventListener('touchstart', () => pressKey('z'), {passive: false});
+        buttonZ.addEventListener('touchend', () => releaseKey('z'));
+        buttonX.addEventListener('touchstart', () => pressKey('x'), {passive: false});
+        buttonX.addEventListener('touchend', () => releaseKey('x'));
+        buttonC.addEventListener('touchstart', () => pressKey('c'), {passive: false});
+        buttonC.addEventListener('touchend', () => releaseKey('c'));
+    </script>
+</body>
+</html>
