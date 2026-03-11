@@ -104,16 +104,16 @@
             pointer-events: auto;
         }
         #button-z {
-            bottom: 0;
-            right: 0;
+            bottom: 60px;
+            right: 140px;
         }
         #button-x {
             bottom: 30px;
             right: 70px;
         }
         #button-c {
-            bottom: 60px;
-            right: 140px;
+            bottom: 0;
+            right: 0;
         }
         .action-button.pressed {
             background-color: rgba(255, 255, 255, 0.4);
@@ -127,7 +127,7 @@
         <button class="game-button" onclick="loadGame('Undertale-HTML-main/index.html')">Undertale</button>
     </div>
 
-    <iframe id="game-frame"></iframe>
+    <iframe id="game-frame" allow="cross-origin"></iframe>
 
     <div id="mobile-controls">
         <div id="joystick">
@@ -140,7 +140,6 @@
         </div>
     </div>
 
-    <script src="error_remover.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
