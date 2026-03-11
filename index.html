@@ -86,7 +86,12 @@
         }
         #action-buttons {
             display: flex;
-            gap: 20px;
+            flex-direction: column;
+            gap: 15px;
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            align-items: flex-end;
         }
         .action-button {
             width: 60px;
@@ -100,6 +105,12 @@
             justify-content: center;
             align-items: center;
             pointer-events: auto;
+        }
+        #button-x {
+            margin-right: 30px;
+        }
+        #button-c {
+            margin-right: 60px;
         }
         .action-button.pressed {
             background-color: rgba(255, 255, 255, 0.4);
@@ -121,9 +132,9 @@
             <div id="joystick-handle"></div>
         </div>
         <div id="action-buttons">
-            <div id="button-c" class="action-button">C</div>
-            <div id="button-x" class="action-button">X</div>
             <div id="button-z" class="action-button">Z</div>
+            <div id="button-x" class="action-button">X</div>
+            <div id="button-c" class="action-button">C</div>
         </div>
     </div>
 
@@ -161,7 +172,7 @@
         };
 
         let keys = {};
-        let joystickActive = false;
+        let joystickTouchId = null;
 
         function dispatchKeyEvent(type, keyIdentifier) {
             const keyInfo = keyMap[keyIdentifier];
@@ -188,8 +199,13 @@
         }
 
         function updateJoystick(x, y) {
-            const angle = Math.atan2(y, x);
-            const distance = Math.sqrt(x * x + y * y);
+            const rect = joystick.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            const deltaX = x - centerX;
+            const deltaY = y - centerY;
+            const angle = Math.atan2(deltaY, deltaX);
+            const distance = Math.min(rect.width / 4, Math.sqrt(deltaX * deltaX + deltaY * deltaY));
             const handleX = distance * Math.cos(angle);
             const handleY = distance * Math.sin(angle);
             handle.style.transform = `translate(${handleX}px, ${handleY}px)`;
@@ -197,7 +213,7 @@
             const angleDeg = angle * 180 / Math.PI;
             let newKeys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
 
-            if (joystickActive) {
+            if (joystickTouchId !== null) {
                 if (angleDeg > -112.5 && angleDeg < -67.5) {
                     newKeys.ArrowUp = true;
                 } else if (angleDeg > -67.5 && angleDeg < -22.5) {
@@ -232,42 +248,50 @@
             }
         }
 
-        joystick.addEventListener('touchstart', (e) => {
-            joystickActive = true;
-        }, { passive: false });
-
-        joystick.addEventListener('touchmove', (e) => {
-            if (!joystickActive) return;
+        function handleTouchStart(e) {
             e.preventDefault();
-            const rect = joystick.getBoundingClientRect();
-            const x = e.touches[0].clientX - rect.left - rect.width / 2;
-            const y = e.touches[0].clientY - rect.top - rect.height / 2;
-            updateJoystick(x, y);
-        }, { passive: false });
-
-        joystick.addEventListener('touchend', (e) => {
-            joystickActive = false;
-            updateJoystick(0, 0);
-        });
-
-        function createButtonListener(element, key) {
-            element.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                element.classList.add('pressed');
-                dispatchKeyEvent('keydown', key);
-                keys[key] = true;
-            }, { passive: false });
-
-            element.addEventListener('touchend', (e) => {
-                element.classList.remove('pressed');
-                dispatchKeyEvent('keyup', key);
-                keys[key] = false;
-            });
+            for (const touch of e.changedTouches) {
+                const target = touch.target;
+                if (target === joystick || joystick.contains(target)) {
+                    joystickTouchId = touch.identifier;
+                    updateJoystick(touch.clientX, touch.clientY);
+                } else if (target.classList.contains('action-button')) {
+                    const key = target.id.replace('button-', '');
+                    target.classList.add('pressed');
+                    dispatchKeyEvent('keydown', key);
+                    keys[key] = true;
+                }
+            }
         }
 
-        createButtonListener(buttonZ, 'z');
-        createButtonListener(buttonX, 'x');
-        createButtonListener(buttonC, 'c');
+        function handleTouchMove(e) {
+            e.preventDefault();
+            for (const touch of e.changedTouches) {
+                if (touch.identifier === joystickTouchId) {
+                    updateJoystick(touch.clientX, touch.clientY);
+                }
+            }
+        }
+
+        function handleTouchEnd(e) {
+            e.preventDefault();
+            for (const touch of e.changedTouches) {
+                if (touch.identifier === joystickTouchId) {
+                    joystickTouchId = null;
+                    updateJoystick(0, 0);
+                } else if (touch.target.classList.contains('action-button')) {
+                    const key = touch.target.id.replace('button-', '');
+                    touch.target.classList.remove('pressed');
+                    dispatchKeyEvent('keyup', key);
+                    keys[key] = false;
+                }
+            }
+        }
+
+        window.addEventListener('touchstart', handleTouchStart, { passive: false });
+        window.addEventListener('touchmove', handleTouchMove, { passive: false });
+        window.addEventListener('touchend', handleTouchEnd, { passive: false });
+        window.addEventListener('touchcancel', handleTouchEnd, { passive: false });
     </script>
 </body>
 </html>

@@ -4,7 +4,7 @@
     function removeErrorOverlay() {
         const errorDivs = document.querySelectorAll('div');
         for (const div of errorDivs) {
-            if (div.innerText && div.innerText.toLowerCase().includes('expectation thrown')) {
+            if (div.innerText && div.innerText.toLowerCase().includes('xception thrown')) {
                 const parent = div.parentNode;
                 if(parent) {
                     parent.remove();
